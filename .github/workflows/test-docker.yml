@@ -1,0 +1,40 @@
+name: Docker Compose CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  docker-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Compose
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and run Docker Compose
+        run: |
+          docker compose up --build --abort-on-container-exit
+          EXIT_CODE=$(docker wait flask_test)
+          docker compose down
+          echo "Test exit code: $EXIT_CODE"
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "Tests failed!"
+            exit 1
+          fi
+
+      - name: Send failure email
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: Docker Compose Tests Failed
+          to: avigayiltess@gmail.com
+          from: GitHub Actions <${{ secrets.EMAIL_USER }}>
+          body: "Docker Compose tests failed. Please check Actions logs."
