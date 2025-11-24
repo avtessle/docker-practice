@@ -43,7 +43,7 @@ services:
   test:
     image: flask_test:latest
     container_name: flask_test
-    restart: unless_stopped
+    restart: unless-stopped
     build:
       context: .
       dockerfile: test.Dockerfile
